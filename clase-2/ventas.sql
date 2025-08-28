@@ -301,4 +301,3 @@ CREATE TABLE return_details (
     FOREIGN KEY (return_id) REFERENCES returns(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
-

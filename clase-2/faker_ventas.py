@@ -28,7 +28,7 @@ NUM_SUPPLIERS = 5000
 NUM_CATEGORIES = 300
 NUM_PRODUCTS = 10000
 NUM_WAREHOUSES = 100
-NUM_PURCHASE_ORDERS = 3000000
+NUM_PURCHASE_ORDERS = 30000
 NUM_SALES = 20000
 NUM_RETURNS = 1000
 
@@ -75,6 +75,8 @@ def hash_password(password):
 
 
 def main():
+    conn = None
+    cursor = None
     try:
         # Connect to database
         conn = mysql.connector.connect(**DB_CONFIG)
@@ -161,11 +163,14 @@ def main():
         print("Inserting users...")
         for i in range(NUM_USERS):
             email = generate_unique_email(used_emails)
+            # Ensure email doesn't exceed VARCHAR(150)
+            if len(email) > 150:
+                email = email[:147] + "..."
+
             password_hash = hash_password("password123")
-            first_name = fake.first_name()
-            last_name = fake.last_name()
-            # Limit phone number length to fit in VARCHAR(20)
-            phone = fake.phone_number()[:20]
+            first_name = fake.first_name()[:100]  # Limit to VARCHAR(100)
+            last_name = fake.last_name()[:100]   # Limit to VARCHAR(100)
+            phone = fake.phone_number()[:20]     # Limit to VARCHAR(20)
             birth_date = fake.date_of_birth(minimum_age=18, maximum_age=70)
             status = random.choices(['active', 'inactive', 'suspended'], weights=[85, 10, 5])[0]
 
@@ -201,17 +206,17 @@ def main():
             'Purchasing Manager', 'Driver', 'Security', 'Cleaning', 'Maintenance', 'IT Specialist'
         ]
 
-        for i in range(NUM_EMPLOYEES):
-            if i >= len(available_users):
-                break
+        # Limit employees to maximum 70% of available users to leave room for customers
+        max_employees = min(NUM_EMPLOYEES, int(len(available_users) * 0.7))
 
+        for i in range(max_employees):
             user = available_users[i]
-            employee_code = generate_unique_code("EMP", used_codes, 6)
-            position = random.choice(positions)
-            salary = random.uniform(1000, 8000)
+            employee_code = generate_unique_code("EMP", used_codes, 6)[:20]  # Limit to VARCHAR(20)
+            position = random.choice(positions)[:100]  # Limit to VARCHAR(100)
+            salary = round(random.uniform(1000, 8000), 2)  # DECIMAL(10,2)
             hire_date = fake.date_between(start_date='-5y', end_date='today')
             city = random.choice(cities_data)
-            commission = random.uniform(0, 10) if 'Sales' in position else 0
+            commission = round(random.uniform(0, 10), 2) if 'Sales' in position else 0.00  # DECIMAL(5,2)
             status = random.choices(['active', 'inactive', 'leave'], weights=[90, 5, 5])[0]
 
             cursor.execute(
@@ -230,6 +235,9 @@ def main():
                 'status': status
             })
 
+            if (i + 1) % 1000 == 0:
+                print(f"Employees inserted: {i + 1}/{max_employees}")
+
         # Assign managers to some employees
         for employee in employees_data:
             if random.random() < 0.3:  # 30% of employees have a manager
@@ -245,16 +253,20 @@ def main():
         # 6. Populate customers
         customers_data = []
         print("Inserting customers...")
-        remaining_users = available_users[NUM_EMPLOYEES:]
+        # Use users that aren't already employees - start from where employees ended
+        used_user_ids = {emp['user_id'] for emp in employees_data}
+        remaining_users = [u for u in available_users if u['id'] not in used_user_ids]
+
+        print(f"Available users for customers: {len(remaining_users)}")
 
         for i in range(min(NUM_CUSTOMERS, len(remaining_users))):
             user = remaining_users[i]
             customer_type = random.choices(['individual', 'corporate'], weights=[80, 20])[0]
-            identification_document = fake.ssn() if customer_type == 'individual' else fake.ein()
+            identification_document = fake.ssn()[:50] if customer_type == 'individual' else fake.ein()[:50]  # VARCHAR(50)
             registration_date = fake.date_between(start_date='-2y', end_date='today')
             city = random.choice(cities_data)
-            address = fake.address()
-            credit_limit = random.uniform(1000, 50000)
+            address = fake.address()  # TEXT field
+            credit_limit = round(random.uniform(1000, 50000), 2)  # DECIMAL(12,2)
             assigned_employee = random.choice(employees_data) if random.random() < 0.7 else None
             status = random.choices(['active', 'inactive', 'delinquent'], weights=[85, 10, 5])[0]
 
@@ -283,17 +295,20 @@ def main():
         # 7. Populate suppliers
         suppliers_data = []
         print("Inserting suppliers...")
+        used_tax_ids = set()  # Track unique tax_ids
+
         for i in range(NUM_SUPPLIERS):
-            company_name = fake.company()
-            tax_id = fake.ssn()
-            email = fake.company_email()
-            # Limit phone number length to fit in VARCHAR(20)
-            phone = fake.phone_number()[:20]
-            address = fake.address()
+            company_name = fake.company()[:150]  # VARCHAR(150)
+
+            # Generate unique tax_id using the same logic as codes
+            tax_id = generate_unique_code("TAX", used_tax_ids, 6)[:20]  # VARCHAR(20) UNIQUE
+
+            email = fake.company_email()[:150]  # VARCHAR(150)
+            phone = fake.phone_number()[:20]  # VARCHAR(20)
+            address = fake.address()  # TEXT
             city = random.choice(cities_data)
-            contact_name = fake.name()
-            # Limit contact phone number length to fit in VARCHAR(20)
-            contact_phone = fake.phone_number()[:20]
+            contact_name = fake.name()[:100]  # VARCHAR(100)
+            contact_phone = fake.phone_number()[:20]  # VARCHAR(20)
             status = random.choices(['active', 'inactive'], weights=[90, 10])[0]
 
             cursor.execute(
@@ -309,6 +324,9 @@ def main():
                 'name': company_name,
                 'status': status
             })
+
+            if (i + 1) % 500 == 0:
+                print(f"Suppliers inserted: {i + 1}/{NUM_SUPPLIERS}")
 
         conn.commit()
         print(f"Inserted {NUM_SUPPLIERS} suppliers\n")
@@ -326,7 +344,7 @@ def main():
         for category in main_categories:
             cursor.execute(
                 'INSERT INTO product_categories (name, description) VALUES (%s, %s)',
-                (category, fake.text(max_nb_chars=100))
+                (category[:100], fake.text(max_nb_chars=200))  # VARCHAR(100) for name
             )
             category_id = cursor.lastrowid
             categories_data.append({
@@ -338,12 +356,12 @@ def main():
         # Insert subcategories
         for i in range(NUM_CATEGORIES - len(main_categories)):
             parent_category = random.choice(categories_data)
-            name = f"{fake.word().title()} {parent_category['name']}"
+            name = f"{fake.word().title()} {parent_category['name']}"[:100]  # VARCHAR(100)
 
             cursor.execute(
                 '''INSERT INTO product_categories (name, description, parent_category_id)
                    VALUES (%s, %s, %s)''',
-                (name, fake.text(max_nb_chars=100), parent_category['id'])
+                (name, fake.text(max_nb_chars=200), parent_category['id'])
             )
             category_id = cursor.lastrowid
             categories_data.append({
@@ -361,18 +379,18 @@ def main():
         units = ['unit', 'kilogram', 'liter', 'meter', 'box', 'package']
 
         for i in range(NUM_PRODUCTS):
-            code = generate_unique_code("PROD", used_codes, 8)
-            name = f"{fake.word().title()} {fake.word().title()}"
-            description = fake.text(max_nb_chars=200)
+            code = generate_unique_code("PROD", used_codes, 8)[:50]  # VARCHAR(50)
+            name = f"{fake.word().title()} {fake.word().title()}"[:200]  # VARCHAR(200)
+            description = fake.text(max_nb_chars=500)  # TEXT
             category = random.choice(categories_data)
             supplier = random.choice([s for s in suppliers_data if s['status'] == 'active'])
-            purchase_price = random.uniform(10, 500)
-            sale_price = purchase_price * random.uniform(1.2, 3.0)  # 20% to 200% margin
+            purchase_price = round(random.uniform(10, 500), 2)  # DECIMAL(10,2)
+            sale_price = round(purchase_price * random.uniform(1.2, 3.0), 2)  # DECIMAL(10,2)
             current_stock = random.randint(0, 1000)
             minimum_stock = random.randint(5, 50)
-            unit = random.choice(units)
-            weight = random.uniform(0.1, 10.0)
-            dimensions = f"{random.randint(1, 50)}x{random.randint(1, 50)}x{random.randint(1, 50)} cm"
+            unit = random.choice(units)[:20]  # VARCHAR(20)
+            weight = round(random.uniform(0.1, 10.0), 3)  # DECIMAL(8,3)
+            dimensions = f"{random.randint(1, 50)}x{random.randint(1, 50)}x{random.randint(1, 50)} cm"[:100]  # VARCHAR(100)
             status = random.choices(['active', 'discontinued', 'out_of_stock'], weights=[85, 10, 5])[0]
 
             cursor.execute(
@@ -389,12 +407,13 @@ def main():
                 'id': product_id,
                 'code': code,
                 'name': name,
+                'purchase_price': purchase_price,
                 'sale_price': sale_price,
                 'current_stock': current_stock,
                 'status': status
             })
 
-            if (i + 1) % 100 == 0:
+            if (i + 1) % 1000 == 0:
                 print(f"Products inserted: {i + 1}/{NUM_PRODUCTS}")
 
         conn.commit()
@@ -404,18 +423,17 @@ def main():
         warehouses_data = []
         print("Inserting warehouses...")
         for i in range(NUM_WAREHOUSES):
-            name = f"Warehouse {fake.city()}"
-            address = fake.address()
+            name = f"Warehouse {fake.city()}"[:100]  # VARCHAR(100)
+            address = fake.address()  # TEXT NOT NULL
             city = random.choice(cities_data)
-            # Limit phone number length to fit in VARCHAR(20)
-            phone = fake.phone_number()[:20]
-            max_capacity = random.randint(1000, 10000)
-            manager = random.choice(employees_data)
+            phone = fake.phone_number()[:20] if random.random() < 0.7 else None  # VARCHAR(20)
+            max_capacity = random.randint(1000, 50000)  # INT
+            manager = random.choice([e for e in employees_data if 'Manager' in e['position']])
             status = random.choices(['active', 'inactive', 'maintenance'], weights=[85, 10, 5])[0]
 
             cursor.execute(
-                '''INSERT INTO warehouses (name, address, city_id, phone,
-                                           max_capacity, manager_employee_id, status)
+                '''INSERT INTO warehouses (name, address, city_id, phone, max_capacity,
+                                          manager_employee_id, status)
                    VALUES (%s, %s, %s, %s, %s, %s, %s)''',
                 (name, address, city['id'], phone, max_capacity, manager['id'], status)
             )
@@ -430,347 +448,417 @@ def main():
         print(f"Inserted {NUM_WAREHOUSES} warehouses\n")
 
         # 11. Populate warehouse inventory
+        warehouse_inventory_data = []
         print("Inserting warehouse inventory...")
-        inventory_count = 0
         for warehouse in warehouses_data:
-            products_in_warehouse = random.sample(products_data, random.randint(50, 200))
-            for product in products_in_warehouse:
-                quantity = random.randint(0, product['current_stock'])
-                location = f"Aisle {random.randint(1, 10)} - Shelf {random.randint(1, 20)}"
+            # Each warehouse has inventory for 30-70% of products
+            num_products = random.randint(int(len(products_data) * 0.3), int(len(products_data) * 0.7))
+            warehouse_products = random.sample(products_data, num_products)
+
+            for product in warehouse_products:
+                quantity = random.randint(0, 500)
+                location = f"A{random.randint(1, 20)}-{random.randint(1, 10)}-{random.randint(1, 50)}"[:50]  # VARCHAR(50)
 
                 cursor.execute(
                     '''INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity, location)
                        VALUES (%s, %s, %s, %s)''',
                     (product['id'], warehouse['id'], quantity, location)
                 )
-                inventory_count += 1
+
+                inventory_id = cursor.lastrowid
+                warehouse_inventory_data.append({
+                    'id': inventory_id,
+                    'product_id': product['id'],
+                    'warehouse_id': warehouse['id'],
+                    'quantity': quantity
+                })
 
         conn.commit()
-        print(f"Inserted {inventory_count} inventory records\n")
+        print(f"Inserted {len(warehouse_inventory_data)} warehouse inventory records\n")
 
         # 12. Populate purchase orders
         purchase_orders_data = []
         print("Inserting purchase orders...")
-        order_statuses = ['pending', 'approved', 'shipped', 'received', 'cancelled']
 
-        for i in range(NUM_PURCHASE_ORDERS):
-            order_number = generate_unique_code("PO", used_codes, 8)
-            supplier = random.choice([s for s in suppliers_data if s['status'] == 'active'])
-            employee = random.choice([e for e in employees_data if e['status'] == 'active'])
-            order_date = fake.date_between(start_date='-1y', end_date='today')
-            estimated_delivery_date = order_date + timedelta(days=random.randint(1, 30))
-            subtotal = random.uniform(1000, 50000)
-            taxes = subtotal * 0.18
-            total = subtotal + taxes
-            status = random.choice(order_statuses)
+        # Process in batches to avoid memory issues
+        batch_size = 10000
+        for batch_start in range(0, NUM_PURCHASE_ORDERS, batch_size):
+            batch_end = min(batch_start + batch_size, NUM_PURCHASE_ORDERS)
+            batch_orders = []
 
-            actual_delivery_date = None
-            if status in ['received']:
-                actual_delivery_date = estimated_delivery_date + timedelta(days=random.randint(-5, 10))
+            for i in range(batch_start, batch_end):
+                order_number = generate_unique_code("PO", used_codes, 10)[:50]  # VARCHAR(50)
+                supplier = random.choice([s for s in suppliers_data if s['status'] == 'active'])
+                employee = random.choice([e for e in employees_data if e['status'] == 'active'])
+                order_date = fake.date_between(start_date='-1y', end_date='today')
 
-            cursor.execute(
-                '''INSERT INTO purchase_orders (order_number, supplier_id, requesting_employee_id,
-                                                order_date, estimated_delivery_date, actual_delivery_date, subtotal, taxes,
-                                                total, status, notes)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                (order_number, supplier['id'], employee['id'], order_date, estimated_delivery_date,
-                 actual_delivery_date, subtotal, taxes, total, status, fake.text(max_nb_chars=100))
-            )
-            order_id = cursor.lastrowid
-            purchase_orders_data.append({
-                'id': order_id,
-                'number': order_number,
-                'total': total,
-                'status': status
-            })
+                # Calculate delivery date (1-30 days after order date)
+                delivery_days = random.randint(1, 30)
+                estimated_delivery_date = order_date + timedelta(days=delivery_days)
 
-        conn.commit()
+                # Some orders are already delivered
+                if random.random() < 0.7:  # 70% delivered
+                    actual_delivery_date = estimated_delivery_date + timedelta(days=random.randint(-5, 10))
+                    status = 'received'
+                else:
+                    actual_delivery_date = None
+                    status = random.choices(['pending', 'approved', 'shipped', 'cancelled'], weights=[30, 30, 30, 10])[0]
+
+                # Calculate amounts - DECIMAL(12,2)
+                subtotal = round(random.uniform(100, 10000), 2)
+                taxes = round(subtotal * 0.18, 2)  # 18% tax
+                total = round(subtotal + taxes, 2)
+                notes = fake.text(max_nb_chars=200) if random.random() < 0.3 else None
+
+                cursor.execute(
+                    '''INSERT INTO purchase_orders (order_number, supplier_id, requesting_employee_id,
+                                                    order_date, estimated_delivery_date, actual_delivery_date,
+                                                    subtotal, taxes, total, status, notes)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
+                    (order_number, supplier['id'], employee['id'],
+                     order_date, estimated_delivery_date, actual_delivery_date,
+                     subtotal, taxes, total, status, notes)
+                )
+                po_id = cursor.lastrowid
+                batch_orders.append({
+                    'id': po_id,
+                    'number': order_number,
+                    'status': status,
+                    'supplier_id': supplier['id'],
+                    'subtotal': subtotal
+                })
+
+            purchase_orders_data.extend(batch_orders)
+            conn.commit()
+            print(f"Purchase orders inserted: {batch_end}/{NUM_PURCHASE_ORDERS}")
+
         print(f"Inserted {NUM_PURCHASE_ORDERS} purchase orders\n")
 
         # 13. Populate purchase order details
         print("Inserting purchase order details...")
-        details_count = 0
-        for order in purchase_orders_data:
-            num_products = random.randint(1, 10)
-            order_products = random.sample(products_data, num_products)
+        for i, po in enumerate(purchase_orders_data):
+            # Each purchase order has 1-5 different products
+            num_products = random.randint(1, 5)
+            po_products = random.sample([p for p in products_data if p['status'] == 'active'],
+                                      min(num_products, len([p for p in products_data if p['status'] == 'active'])))
 
-            for product in order_products:
+            for product in po_products:
                 quantity = random.randint(1, 100)
-                unit_price = random.uniform(product['sale_price'] * 0.5, product['sale_price'] * 0.8)
-                subtotal = quantity * unit_price
+                unit_price = round(random.uniform(10, 500), 2)  # DECIMAL(10,2)
+                subtotal = round(quantity * unit_price, 2)  # DECIMAL(12,2)
 
                 cursor.execute(
-                    '''INSERT INTO purchase_order_details (purchase_order_id, product_id,
-                                                            quantity, unit_price, subtotal)
+                    '''INSERT INTO purchase_order_details (purchase_order_id, product_id, quantity,
+                                                           unit_price, subtotal)
                        VALUES (%s, %s, %s, %s, %s)''',
-                    (order['id'], product['id'], quantity, unit_price, subtotal)
+                    (po['id'], product['id'], quantity, unit_price, subtotal)
                 )
-                details_count += 1
+
+            if (i + 1) % 10000 == 0:
+                conn.commit()
+                print(f"Purchase order details processed: {i + 1}/{len(purchase_orders_data)}")
 
         conn.commit()
-        print(f"Inserted {details_count} purchase order details\n")
+        print(f"Inserted purchase order details for all orders\n")
 
         # 14. Populate sales
         sales_data = []
         print("Inserting sales...")
         payment_methods = ['cash', 'credit_card', 'debit_card', 'transfer', 'credit']
-        sale_statuses = ['pending', 'completed', 'cancelled', 'returned']
 
         for i in range(NUM_SALES):
-            sale_number = generate_unique_code("SL", used_codes, 8)
+            sale_number = generate_unique_code("S", used_codes, 10)[:50]  # VARCHAR(50)
             customer = random.choice([c for c in customers_data if c['status'] == 'active'])
-            salesperson = random.choice([e for e in employees_data if e['status'] == 'active' and 'Sales' in e['position']])
-            if not salesperson:  # If no salespeople, use any employee
-                salesperson = random.choice([e for e in employees_data if e['status'] == 'active'])
-
+            employee = random.choice([e for e in employees_data if e['status'] == 'active'])
             sale_date = fake.date_time_between(start_date='-6m', end_date='now')
-            subtotal = random.uniform(50, 5000)
-            discount = subtotal * random.uniform(0, 0.2)  # Up to 20% discount
-            taxes = (subtotal - discount) * 0.18
-            total = subtotal - discount + taxes
             payment_method = random.choice(payment_methods)
-            status = random.choices(sale_statuses, weights=[5, 80, 10, 5])[0]
+
+            # Calculate amounts - DECIMAL(12,2)
+            subtotal = round(random.uniform(50, 2000), 2)
+            discount = round(subtotal * random.uniform(0, 0.2), 2) if random.random() < 0.3 else 0.00  # 30% chance of discount
+            taxes = round(subtotal * 0.18, 2)  # 18% tax
+            total = round(subtotal + taxes - discount, 2)
+            notes = fake.text(max_nb_chars=200) if random.random() < 0.2 else None
+
+            status = random.choices(['completed', 'cancelled', 'returned'], weights=[90, 5, 5])[0]
 
             cursor.execute(
-                '''INSERT INTO sales (sale_number, customer_id, salesperson_employee_id,
-                                      sale_date, subtotal, discount, taxes, total, payment_method,
-                                      status, notes)
+                '''INSERT INTO sales (sale_number, customer_id, salesperson_employee_id, sale_date,
+                                     subtotal, discount, taxes, total, payment_method, status, notes)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)''',
-                (sale_number, customer['id'], salesperson['id'], sale_date, subtotal, discount,
-                 taxes, total, payment_method, status, fake.text(max_nb_chars=50))
+                (sale_number, customer['id'], employee['id'], sale_date,
+                 subtotal, discount, taxes, total, payment_method, status, notes)
             )
             sale_id = cursor.lastrowid
             sales_data.append({
                 'id': sale_id,
                 'number': sale_number,
                 'customer_id': customer['id'],
-                'total': total,
-                'payment_method': payment_method,
                 'status': status,
-                'sale_date': sale_date
+                'total': total
             })
 
-            if (i + 1) % 200 == 0:
+            if (i + 1) % 1000 == 0:
                 print(f"Sales inserted: {i + 1}/{NUM_SALES}")
 
         conn.commit()
         print(f"Inserted {NUM_SALES} sales\n")
 
-        # 15. Populate sale details
-        print("Inserting sale details...")
-        sale_details_count = 0
-        for sale in sales_data:
-            num_products = random.randint(1, 8)
-            available_products = [p for p in products_data if p['status'] == 'active' and p['current_stock'] > 0]
-            if not available_products:
-                continue
-
-            sale_products = random.sample(available_products, min(num_products, len(available_products)))
+        # 15. Populate sales details
+        print("Inserting sales details...")
+        for i, sale in enumerate(sales_data):
+            # Each sale has 1-3 different products
+            num_products = random.randint(1, 3)
+            sale_products = random.sample([p for p in products_data if p['status'] == 'active' and p['current_stock'] > 0],
+                                        min(num_products, len([p for p in products_data if p['status'] == 'active' and p['current_stock'] > 0])))
 
             for product in sale_products:
                 quantity = random.randint(1, min(10, product['current_stock']))
-                unit_price = product['sale_price']
-                unit_discount = unit_price * random.uniform(0, 0.15)  # Up to 15% discount per item
-                subtotal = quantity * (unit_price - unit_discount)
+                unit_price = round(product['sale_price'] * random.uniform(0.9, 1.1), 2)  # DECIMAL(10,2)
+                unit_discount = round(unit_price * random.uniform(0, 0.1), 2) if random.random() < 0.2 else 0.00  # DECIMAL(10,2)
+                subtotal = round((unit_price - unit_discount) * quantity, 2)  # DECIMAL(12,2)
 
                 cursor.execute(
-                    '''INSERT INTO sale_details (sale_id, product_id, quantity,
-                                                 unit_price, unit_discount, subtotal)
+                    '''INSERT INTO sale_details (sale_id, product_id, quantity, unit_price, unit_discount, subtotal)
                        VALUES (%s, %s, %s, %s, %s, %s)''',
                     (sale['id'], product['id'], quantity, unit_price, unit_discount, subtotal)
                 )
-                sale_details_count += 1
+
+            if (i + 1) % 1000 == 0:
+                conn.commit()
+                print(f"Sales details processed: {i + 1}/{len(sales_data)}")
 
         conn.commit()
-        print(f"Inserted {sale_details_count} sale details\n")
+        print(f"Inserted sales details for all sales\n")
 
         # 16. Populate inventory movements
+        inventory_movements_data = []
         print("Inserting inventory movements...")
         movement_types = ['in', 'out', 'adjustment', 'transfer']
-        references = ['sale', 'purchase', 'adjustment', 'transfer']
-        movements_count = 0
+        reference_types = ['sale', 'purchase', 'adjustment', 'transfer']
 
-        for i in range(1000):  # 1000 example movements
+        for i in range(NUM_SALES * 2):  # 2 movements per sale on average
             product = random.choice(products_data)
-            warehouse = random.choice(warehouses_data)
+            warehouse = random.choice([w for w in warehouses_data if w['status'] == 'active'])
             movement_type = random.choice(movement_types)
-            quantity = random.randint(1, 100)
-            reference_type = random.choice(references)
-            employee = random.choice(employees_data)
-            movement_date = fake.date_time_between(start_date='-3m', end_date='now')
+            reference_type = random.choice(reference_types)
+            quantity = random.randint(1, 50)
+            employee = random.choice([e for e in employees_data if e['status'] == 'active'])
+            notes = fake.text(max_nb_chars=200) if random.random() < 0.3 else None
+            movement_date = fake.date_time_between(start_date='-6m', end_date='now')
+            reference_id = random.choice(sales_data)['id'] if reference_type == 'sale' else None
 
             cursor.execute(
-                '''INSERT INTO inventory_movements (product_id, warehouse_id, movement_type,
-                                                    quantity, reference_type, employee_id, notes,
-                                                    movement_date)
-                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
+                '''INSERT INTO inventory_movements (product_id, warehouse_id, movement_type, quantity,
+                                                   reference_type, reference_id, employee_id, notes, movement_date)
+                   VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)''',
                 (product['id'], warehouse['id'], movement_type, quantity, reference_type,
-                 employee['id'], fake.text(max_nb_chars=100), movement_date)
+                 reference_id, employee['id'], notes, movement_date)
             )
-            movements_count += 1
+
+            inventory_movements_data.append({
+                'id': cursor.lastrowid,
+                'product_id': product['id'],
+                'warehouse_id': warehouse['id']
+            })
 
         conn.commit()
-        print(f"Inserted {movements_count} inventory movements\n")
+        print(f"Inserted {len(inventory_movements_data)} inventory movements\n")
 
         # 17. Populate accounts receivable
-        print("Inserting accounts receivable...")
         accounts_receivable_data = []
-        credit_sales = [s for s in sales_data if s['payment_method'] == 'credit' and s['status'] == 'completed']
+        print("Inserting accounts receivable...")
+        credit_sales = [s for s in sales_data if s['status'] == 'completed']
 
-        for sale in credit_sales:
-            due_date = sale['sale_date'].date() + timedelta(days=random.randint(15, 90))
-            days_overdue = max(0, (datetime.now().date() - due_date).days)
-            pending_amount = sale['total'] * random.uniform(0, 1)  # May be partially paid
-            status = 'overdue' if days_overdue > 0 else 'pending'
-            if pending_amount == 0:
-                status = 'paid'
-            elif 0 < pending_amount < sale['total']:
+        for sale in credit_sales[:int(len(credit_sales) * 0.3)]:  # 30% of sales have credit
+            customer_id = sale['customer_id']
+            total_amount = sale['total']
+            # Some accounts are partially paid
+            if random.random() < 0.6:  # 60% fully pending
+                pending_amount = total_amount
+                status = 'pending'
+            elif random.random() < 0.8:  # 20% partially paid
+                pending_amount = round(total_amount * random.uniform(0.3, 0.9), 2)
                 status = 'partial'
+            else:  # 20% fully paid
+                pending_amount = 0.00
+                status = 'paid'
+
+            due_date = fake.date_between(start_date='today', end_date='+60d')
+            days_overdue = max(0, (datetime.now().date() - due_date).days) if pending_amount > 0 else 0
+            if days_overdue > 0:
+                status = 'overdue'
 
             cursor.execute(
-                '''INSERT INTO accounts_receivable (sale_id, customer_id, total_amount,
-                                                    pending_amount, due_date, days_overdue, status)
+                '''INSERT INTO accounts_receivable (sale_id, customer_id, total_amount, pending_amount,
+                                                   due_date, days_overdue, status)
                    VALUES (%s, %s, %s, %s, %s, %s, %s)''',
-                (sale['id'], sale['customer_id'], sale['total'], pending_amount,
-                 due_date, days_overdue, status)
+                (sale['id'], customer_id, total_amount, pending_amount, due_date, days_overdue, status)
             )
-            account_id = cursor.lastrowid
+
             accounts_receivable_data.append({
-                'id': account_id,
+                'id': cursor.lastrowid,
                 'sale_id': sale['id'],
-                'total_amount': sale['total'],
-                'pending_amount': pending_amount
+                'customer_id': customer_id,
+                'total_amount': total_amount,
+                'pending_amount': pending_amount,
+                'status': status
             })
 
         conn.commit()
         print(f"Inserted {len(accounts_receivable_data)} accounts receivable\n")
 
         # 18. Populate payments received
+        payments_received_data = []
         print("Inserting payments received...")
-        payments_count = 0
-        for account in accounts_receivable_data:
-            if account['pending_amount'] < account['total_amount']:  # There have been payments
-                num_payments = random.randint(1, 3)
-                total_paid_amount = account['total_amount'] - account['pending_amount']
+        payment_methods_received = ['cash', 'credit_card', 'debit_card', 'transfer', 'check']
 
-                for j in range(num_payments):
-                    payment_amount = total_paid_amount / num_payments if j < num_payments - 1 else total_paid_amount - (
-                            total_paid_amount / num_payments * j)
-                    payment_method = random.choice(['cash', 'credit_card', 'debit_card', 'transfer', 'check'])
-                    payment_date = fake.date_time_between(start_date='-2m', end_date='now')
-                    employee = random.choice(employees_data)
+        for ar in accounts_receivable_data:
+            if ar['status'] in ['paid', 'partial']:
+                num_payments = random.randint(1, 3)
+                remaining_amount = ar['total_amount'] - ar['pending_amount']
+
+                for _ in range(num_payments):
+                    if remaining_amount <= 0:
+                        break
+
+                    if num_payments == 1:
+                        payment_amount = remaining_amount
+                    else:
+                        payment_amount = round(remaining_amount * random.uniform(0.3, 0.8), 2)
+
+                    payment_method = random.choice(payment_methods_received)
+                    reference_number = f"REF{random.randint(100000, 999999)}" if payment_method in ['transfer', 'check'] else None
+                    payment_date = fake.date_time_between(start_date='-3m', end_date='now')
+                    receiving_employee = random.choice([e for e in employees_data if e['status'] == 'active'])
+                    notes = fake.text(max_nb_chars=100) if random.random() < 0.2 else None
 
                     cursor.execute(
-                        '''INSERT INTO payments_received (accounts_receivable_id, payment_amount,
-                                                          payment_method, reference_number, payment_date,
-                                                          receiving_employee_id,
-                                                          notes)
+                        '''INSERT INTO payments_received (accounts_receivable_id, payment_amount, payment_method,
+                                                         reference_number, payment_date, receiving_employee_id, notes)
                            VALUES (%s, %s, %s, %s, %s, %s, %s)''',
-                        (account['id'], payment_amount, payment_method, fake.uuid4()[:20], payment_date,
-                         employee['id'], fake.text(max_nb_chars=50))
+                        (ar['id'], payment_amount, payment_method, reference_number,
+                         payment_date, receiving_employee['id'], notes)
                     )
-                    payments_count += 1
+
+                    payments_received_data.append({
+                        'id': cursor.lastrowid,
+                        'accounts_receivable_id': ar['id'],
+                        'payment_amount': payment_amount
+                    })
+
+                    remaining_amount -= payment_amount
 
         conn.commit()
-        print(f"Inserted {payments_count} payments received\n")
+        print(f"Inserted {len(payments_received_data)} payments received\n")
 
         # 19. Populate returns
         returns_data = []
         print("Inserting returns...")
-        completed_sales = [s for s in sales_data if s['status'] == 'completed']
-        return_sales = random.sample(completed_sales, min(NUM_RETURNS, len(completed_sales)))
 
-        for sale in return_sales:
-            return_number = generate_unique_code("RET", used_codes, 8)
-            employee = random.choice(employees_data)
-            return_date = sale['sale_date'] + timedelta(days=random.randint(1, 30))
-            reason = random.choice([
-                'Defective product',
-                'Does not meet expectations',
-                'Arrived damaged',
-                'Wrong order',
-                'Customer changed mind',
-                'Warranty claim',
-                'Sales error'
-            ])
-            total_returned = sale['total'] * random.uniform(0.1, 1.0)  # Partial or full return
-            status = random.choices(['pending', 'approved', 'rejected', 'processed'], weights=[10, 60, 10, 20])[0]
+        # Returns are based on completed sales
+        completed_sales = [s for s in sales_data if s['status'] == 'completed']
+
+        for i in range(min(NUM_RETURNS, len(completed_sales))):
+            sale = random.choice(completed_sales)
+            return_number = generate_unique_code("R", used_codes, 10)[:50]  # VARCHAR(50)
+            return_date = fake.date_time_between(start_date='-6m', end_date='now')
+            reason = fake.text(max_nb_chars=300)  # TEXT field
+            total_returned = round(sale['total'] * random.uniform(0.1, 1.0), 2)  # DECIMAL(12,2)
+            status = random.choices(['approved', 'rejected', 'pending', 'processed'], weights=[60, 10, 20, 10])[0]
+
+            # Get customer from sale
+            customer_id = sale['customer_id']
+            authorizing_employee = random.choice([e for e in employees_data if e['status'] == 'active'])
 
             cursor.execute(
-                '''INSERT INTO returns (return_number, sale_id, customer_id,
-                                        authorizing_employee_id, return_date, reason, total_returned, status)
+                '''INSERT INTO returns (return_number, sale_id, customer_id, authorizing_employee_id,
+                                       return_date, reason, total_returned, status)
                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)''',
-                (return_number, sale['id'], sale['customer_id'], employee['id'],
+                (return_number, sale['id'], customer_id, authorizing_employee['id'],
                  return_date, reason, total_returned, status)
             )
             return_id = cursor.lastrowid
             returns_data.append({
                 'id': return_id,
-                'sale_id': sale['id'],
                 'number': return_number,
-                'total': total_returned
+                'sale_id': sale['id']
             })
+
+            # Remove the sale from available sales to avoid duplicate returns
+            completed_sales.remove(sale)
 
         conn.commit()
         print(f"Inserted {len(returns_data)} returns\n")
 
         # 20. Populate return details
+        return_details_data = []
         print("Inserting return details...")
-        return_details_count = 0
+        product_conditions = ['new', 'used', 'damaged']
+
         for return_record in returns_data:
-            # Get products from original sale
-            cursor.execute(
-                'SELECT product_id, quantity, unit_price FROM sale_details WHERE sale_id = %s',
-                (return_record['sale_id'],)
-            )
-            sale_products = cursor.fetchall()
+            # Each return has 1-3 products returned
+            num_products = random.randint(1, 3)
+            return_products = random.sample([p for p in products_data if p['status'] == 'active'], num_products)
 
-            # Select some products to return
-            products_to_return = random.sample(sale_products, random.randint(1, len(sale_products)))
-
-            for product_info in products_to_return:
-                product_id, original_quantity, original_price = product_info
-                quantity_returned = random.randint(1, original_quantity)
-                subtotal_returned = quantity_returned * original_price
-                product_condition = random.choices(['new', 'used', 'damaged'], weights=[20, 60, 20])[0]
+            for product in return_products:
+                quantity_returned = random.randint(1, 5)
+                unit_price = round(product['sale_price'] * random.uniform(0.9, 1.1), 2)  # DECIMAL(10,2)
+                subtotal_returned = round(unit_price * quantity_returned, 2)  # DECIMAL(12,2)
+                product_condition = random.choice(product_conditions)
 
                 cursor.execute(
-                    '''INSERT INTO return_details (return_id, product_id,
-                                                   quantity_returned, unit_price, subtotal_returned,
-                                                   product_condition)
+                    '''INSERT INTO return_details (return_id, product_id, quantity_returned, unit_price,
+                                                  subtotal_returned, product_condition)
                        VALUES (%s, %s, %s, %s, %s, %s)''',
-                    (return_record['id'], product_id, quantity_returned, original_price,
+                    (return_record['id'], product['id'], quantity_returned, unit_price,
                      subtotal_returned, product_condition)
                 )
-                return_details_count += 1
+
+                return_details_data.append({
+                    'id': cursor.lastrowid,
+                    'return_id': return_record['id'],
+                    'product_id': product['id']
+                })
 
         conn.commit()
-        print(f"Inserted {return_details_count} return details\n")
+        print(f"Inserted {len(return_details_data)} return details\n")
 
-        print("=== POPULATION COMPLETED ===")
-        print(f"Total tables populated: 20")
-
-        # Calculate total records
-        total_records = sum([
-            len(countries_data), NUM_REGIONS, NUM_CITIES, NUM_USERS,
-            len(employees_data), len(customers_data), NUM_SUPPLIERS,
-            NUM_CATEGORIES, NUM_PRODUCTS, NUM_WAREHOUSES,
-            inventory_count, NUM_PURCHASE_ORDERS, details_count,
-            NUM_SALES, sale_details_count, movements_count,
-            len(accounts_receivable_data), payments_count, len(returns_data),
-            return_details_count
-        ])
-        print(f"Total approximate records: {total_records}")
-
-        cursor.close()
-        conn.close()
-
-        print("\nSales database populated successfully!")
+        print("=== DATABASE POPULATION COMPLETED SUCCESSFULLY ===")
+        print(f"Summary:")
+        print(f"- Countries: {len(countries_data)}")
+        print(f"- Regions: {len(regions_data)}")
+        print(f"- Cities: {len(cities_data)}")
+        print(f"- Users: {len(users_data)}")
+        print(f"- Employees: {len(employees_data)}")
+        print(f"- Customers: {len(customers_data)}")
+        print(f"- Suppliers: {len(suppliers_data)}")
+        print(f"- Categories: {len(categories_data)}")
+        print(f"- Products: {len(products_data)}")
+        print(f"- Warehouses: {len(warehouses_data)}")
+        print(f"- Warehouse Inventory: {len(warehouse_inventory_data)}")
+        print(f"- Purchase Orders: {len(purchase_orders_data)}")
+        print(f"- Sales: {len(sales_data)}")
+        print(f"- Inventory Movements: {len(inventory_movements_data)}")
+        print(f"- Accounts Receivable: {len(accounts_receivable_data)}")
+        print(f"- Payments Received: {len(payments_received_data)}")
+        print(f"- Returns: {len(returns_data)}")
+        print(f"- Return Details: {len(return_details_data)}")
 
     except mysql.connector.Error as err:
         print(f"MySQL Error: {err}")
+        if conn:
+            conn.rollback()
     except Exception as e:
-        print(f"General Error: {e}")
+        print(f"Error: {e}")
+        if conn:
+            conn.rollback()
+    finally:
+        if conn and conn.is_connected():
+            if cursor:
+                cursor.close()
+            conn.close()
+            print("\nDatabase connection closed.")
 
 
 if __name__ == "__main__":
