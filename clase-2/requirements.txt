@@ -5,4 +5,3 @@ faker==20.1.0
 
 # Dependencias adicionales para manejo de fechas y datos
 python-dotenv==1.0.0
-bson==0.5.10
