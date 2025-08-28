@@ -21,15 +21,15 @@ DB_CONFIG = {
 NUM_COUNTRIES = 20
 NUM_REGIONS = 100
 NUM_CITIES = 500
-NUM_USERS = 5000
-NUM_EMPLOYEES = 20000
-NUM_CUSTOMERS = 5000
-NUM_SUPPLIERS = 5000
+NUM_USERS = 1000
+NUM_EMPLOYEES = 10000
+NUM_CUSTOMERS = 1000
+NUM_SUPPLIERS = 1000
 NUM_CATEGORIES = 300
 NUM_PRODUCTS = 10000
 NUM_WAREHOUSES = 100
-NUM_PURCHASE_ORDERS = 30000
-NUM_SALES = 20000
+NUM_PURCHASE_ORDERS = 10000
+NUM_SALES = 10000
 NUM_RETURNS = 1000
 
 
@@ -450,31 +450,70 @@ def main():
         # 11. Populate warehouse inventory
         warehouse_inventory_data = []
         print("Inserting warehouse inventory...")
-        for warehouse in warehouses_data:
-            # Each warehouse has inventory for 30-70% of products
-            num_products = random.randint(int(len(products_data) * 0.3), int(len(products_data) * 0.7))
+
+        # More realistic approach: each warehouse has inventory for 10-25% of products
+        # This will create approximately 15,000-25,000 records instead of 500,000+
+        batch_size = 1000
+        total_inventory_records = 0
+
+        for warehouse_idx, warehouse in enumerate(warehouses_data):
+            # Each warehouse has inventory for 10-25% of products (more realistic)
+            inventory_percentage = random.uniform(0.10, 0.25)
+            num_products = int(len(products_data) * inventory_percentage)
             warehouse_products = random.sample(products_data, num_products)
 
+            batch_inventory = []
             for product in warehouse_products:
-                quantity = random.randint(0, 500)
-                location = f"A{random.randint(1, 20)}-{random.randint(1, 10)}-{random.randint(1, 50)}"[:50]  # VARCHAR(50)
+                # More realistic quantity ranges based on product type
+                if product['current_stock'] > 100:
+                    quantity = random.randint(50, 300)
+                elif product['current_stock'] > 50:
+                    quantity = random.randint(10, 100)
+                else:
+                    quantity = random.randint(0, 50)
 
-                cursor.execute(
+                location = f"{chr(65 + random.randint(0, 4))}{random.randint(1, 10)}-{random.randint(1, 5)}-{random.randint(1, 20)}"[:50]  # A1-1-1 to E10-5-20
+
+                batch_inventory.append((product['id'], warehouse['id'], quantity, location))
+
+                # Insert in batches for better performance
+                if len(batch_inventory) >= batch_size:
+                    cursor.executemany(
+                        '''INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity, location)
+                           VALUES (%s, %s, %s, %s)''',
+                        batch_inventory
+                    )
+                    warehouse_inventory_data.extend([{
+                        'id': None,  # We don't need the actual ID for our use case
+                        'product_id': item[0],
+                        'warehouse_id': item[1],
+                        'quantity': item[2]
+                    } for item in batch_inventory])
+                    total_inventory_records += len(batch_inventory)
+                    batch_inventory = []
+
+            # Insert remaining records in batch
+            if batch_inventory:
+                cursor.executemany(
                     '''INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity, location)
                        VALUES (%s, %s, %s, %s)''',
-                    (product['id'], warehouse['id'], quantity, location)
+                    batch_inventory
                 )
+                warehouse_inventory_data.extend([{
+                    'id': None,
+                    'product_id': item[0],
+                    'warehouse_id': item[1],
+                    'quantity': item[2]
+                } for item in batch_inventory])
+                total_inventory_records += len(batch_inventory)
 
-                inventory_id = cursor.lastrowid
-                warehouse_inventory_data.append({
-                    'id': inventory_id,
-                    'product_id': product['id'],
-                    'warehouse_id': warehouse['id'],
-                    'quantity': quantity
-                })
+            # Progress update every 10 warehouses
+            if (warehouse_idx + 1) % 10 == 0:
+                conn.commit()  # Commit every 10 warehouses
+                print(f"Warehouse inventory processed: {warehouse_idx + 1}/{len(warehouses_data)} warehouses, {total_inventory_records} records")
 
         conn.commit()
-        print(f"Inserted {len(warehouse_inventory_data)} warehouse inventory records\n")
+        print(f"Inserted {total_inventory_records} warehouse inventory records (optimized)\n")
 
         # 12. Populate purchase orders
         purchase_orders_data = []
