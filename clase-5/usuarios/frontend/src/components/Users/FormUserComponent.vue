@@ -50,7 +50,7 @@
     <template #footer>
       <a-space>
         <a-button @click.prevent="handleCancel">Cancelar</a-button>
-        <a-button type="primary" @click.prevent="handleSaveForm" >Guardar</a-button>
+        <a-button type="primary" @click.prevent="handleSaveForm" :loading="loading">Guardar</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -64,7 +64,7 @@ defineOptions({
   name: 'FormUserComponent',
 })
 
-const {form, openForm, handleCancel, handleSaveForm} = useUserComposable()
+const {form, loading, openForm, handleCancel, handleSaveForm} = useUserComposable()
 
 </script>
 

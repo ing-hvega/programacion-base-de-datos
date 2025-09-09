@@ -6,7 +6,7 @@ import {onMounted} from "vue";
 
 export function useUserComposable() {
     const userStore = useUsersStore();
-    const {form, openForm, loading, dataSource} = storeToRefs(userStore);
+    const {form, pagination, openForm, loading, dataSource} = storeToRefs(userStore);
     const {resetForm} = userStore;
 
     const {createUser} = useUserService
@@ -31,6 +31,13 @@ export function useUserComposable() {
             title: 'Descripción',
             dataIndex: 'description',
             key: 'description',
+        },
+        {
+            title: 'Opciones',
+            dataIndex: 'options',
+            key: 'options',
+            width: "8%",
+            align: "center",
         }
     ];
 
@@ -79,6 +86,14 @@ export function useUserComposable() {
     const mountedListUsers = async () => {
         const response = await useUserService.listUsers()
         dataSource.value = response.data
+        pagination.value = response.pagination
+    }
+
+    const handleChangeTable = async (pagination) => {
+        const {current, pageSize} = pagination;
+        const response = await useUserService.listUsers(current, pageSize)
+        dataSource.value = response.data
+        pagination.value = response.pagination
     }
 
     onMounted(async () => {
@@ -87,6 +102,7 @@ export function useUserComposable() {
 
     return {
         form,
+        pagination,
         openForm,
         loading,
         columns,
@@ -94,5 +110,6 @@ export function useUserComposable() {
         handleOpen,
         handleCancel,
         handleSaveForm,
+        handleChangeTable,
     }
 }

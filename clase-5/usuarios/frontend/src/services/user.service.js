@@ -24,6 +24,6 @@ function showUser(id) {
     return requestService.get(`/api/user/${id}`);
 }
 
-function listUsers() {
-    return requestService.get(`/api/users`);
+function listUsers(page = 1, pageSize = 10, search = undefined) {
+    return requestService.get(`/api/users`, {page, pageSize, ...(search && {search})});
 }

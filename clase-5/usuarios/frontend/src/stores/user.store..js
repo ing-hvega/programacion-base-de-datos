@@ -14,10 +14,11 @@ export const useUsersStore = defineStore('userStore', () => {
     const openForm = ref(false)
     const loading = ref(false)
     const dataSource = ref([])
+    const pagination = ref({})
 
     const resetForm = () => {
         form.value = {...initialFormState};
     }
 
-    return {form, openForm, loading, dataSource, resetForm}
+    return {form, pagination, openForm, loading, dataSource, resetForm}
 })
