@@ -1,11 +1,20 @@
 <template>
   <div class="table-users-component">
-    <div class="actions">
-      <a-button type="primary" @click.prevent="handleOpen">Crear usuario</a-button>
+    <div class="header">
+      <div class="title">Listado de usuarios</div>
+      <div class="actions">
+        <a-button type="primary" @click.prevent="handleOpen">Crear usuario</a-button>
+      </div>
     </div>
 
     <div>
-      <div class="title">Listado de usuarios</div>
+      <div class="search">
+        <a-input v-model:value="search" placeholder="Buscar por nombre o correo electrónico" allow-clear>
+          <template #prefix>
+            <search-outlined />
+          </template>
+        </a-input>
+      </div>
       <a-table
           bordered
           :dataSource="dataSource"
@@ -39,7 +48,7 @@
 </template>
 
 <script setup>
-import {EditOutlined, EyeOutlined, DeleteOutlined} from '@ant-design/icons-vue';
+import {EditOutlined, EyeOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons-vue';
 import FormUserComponent from "@/components/Users/FormUserComponent.vue";
 import {useUserComposable} from "@/composable/users/user.composable..js";
 
@@ -47,7 +56,7 @@ defineOptions({
   name: 'TableUserComponent',
 })
 
-const {columns, pagination, dataSource, handleOpen, handleChangeTable} = useUserComposable()
+const {columns, pagination, search, dataSource, handleOpen, handleChangeTable} = useUserComposable()
 
 </script>
 
@@ -55,7 +64,12 @@ const {columns, pagination, dataSource, handleOpen, handleChangeTable} = useUser
 .table-users-component {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
 
   .actions {
     display: flex;
@@ -63,9 +77,8 @@ const {columns, pagination, dataSource, handleOpen, handleChangeTable} = useUser
   }
 
   .title {
-    font-size: 1.5rem;
+    font-size: 2rem;
     font-weight: 500;
-    margin-bottom: 1rem;
   }
 
   .list-actions {
@@ -74,6 +87,14 @@ const {columns, pagination, dataSource, handleOpen, handleChangeTable} = useUser
     justify-content: center;
     font-size: 1rem;
     cursor: pointer;
+  }
+
+  .search {
+    display: flex;
+    justify-content: flex-end;
+    width: 30rem;
+    margin-top: 20px;
+    margin-bottom: 20px;
   }
 }
 

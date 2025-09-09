@@ -2,11 +2,11 @@ import {useUsersStore} from "@/stores/user.store..js";
 import {storeToRefs} from "pinia";
 import {useUserService} from "@/services/user.service.js"
 import {message} from "ant-design-vue";
-import {onMounted} from "vue";
+import {onMounted, watch} from "vue";
 
 export function useUserComposable() {
     const userStore = useUsersStore();
-    const {form, pagination, openForm, loading, dataSource} = storeToRefs(userStore);
+    const {form, pagination, search, openForm, loading, dataSource} = storeToRefs(userStore);
     const {resetForm} = userStore;
 
     const {createUser} = useUserService
@@ -89,9 +89,9 @@ export function useUserComposable() {
         pagination.value = response.pagination
     }
 
-    const handleChangeTable = async (pagination) => {
+    const handleChangeTable = async (pagination, search = undefined) => {
         const {current, pageSize} = pagination;
-        const response = await useUserService.listUsers(current, pageSize)
+        const response = await useUserService.listUsers(current, pageSize, search)
         dataSource.value = response.data
         pagination.value = response.pagination
     }
@@ -100,9 +100,16 @@ export function useUserComposable() {
         await mountedListUsers()
     })
 
+    watch(search, async (newSearch, oldSearch) => {
+        if (newSearch !== oldSearch && oldSearch !== undefined) {
+            await handleChangeTable({...pagination.value}, newSearch)
+        }
+    })
+
     return {
         form,
         pagination,
+        search,
         openForm,
         loading,
         columns,
