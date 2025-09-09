@@ -64,7 +64,7 @@ defineOptions({
   name: 'FormUserComponent',
 })
 
-const {form, loading, openForm, handleCancel, handleSaveForm} = useUserComposable()
+const {form, loading, openForm, handleCancel, handleSaveForm} = useUserComposable({ loadDataOnMount: false });
 
 </script>
 

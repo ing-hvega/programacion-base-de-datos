@@ -56,8 +56,7 @@ defineOptions({
   name: 'TableUserComponent',
 })
 
-const {columns, pagination, search, dataSource, handleOpen, handleChangeTable} = useUserComposable()
-
+const {columns, pagination, search, dataSource, handleOpen, handleChangeTable} = useUserComposable();
 </script>
 
 <style scoped>
