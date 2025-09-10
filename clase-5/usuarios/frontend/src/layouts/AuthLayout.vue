@@ -19,6 +19,9 @@
             <a-menu-item key="1">
               <RouterLink :to="{name: 'users'}">Usuarios</RouterLink>
             </a-menu-item>
+            <a-menu-item key="2">
+              <RouterLink :to="{name: 'plane'}">Planos</RouterLink>
+            </a-menu-item>
           </a-sub-menu>
         </a-menu>
       </a-layout-sider>

@@ -18,6 +18,12 @@ const router = createRouter({
                     name: 'users',
                     component: () => import('../views/UsersView.vue'),
                     meta: { title: 'Usuarios', auth: true }
+                },
+                {
+                    path: 'plane',
+                    name: 'plane',
+                    component: () => import('../views/PlaneView.vue'),
+                    meta: { title: 'Planos', auth: true }
                 }
             ]
         },
