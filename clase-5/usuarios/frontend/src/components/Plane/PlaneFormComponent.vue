@@ -1,6 +1,6 @@
 <template>
   <a-drawer
-      title="Crear plano"
+      :title="`${isEdit ? 'Editar' : 'Crear'} plano`"
       :width="720"
       :open="openForm"
       :body-style="{ paddingBottom: '80px' }"
@@ -39,8 +39,8 @@
     </a-form>
     <template #footer>
       <a-space>
-        <a-button>Cancelar</a-button>
-        <a-button type="primary" @click="handleCreatePlane">Guardar</a-button>
+        <a-button @click.prevent="handleCloseForm">Cancelar</a-button>
+        <a-button type="primary" @click="handleCreateOrUpdatePlane">Guardar</a-button>
       </a-space>
     </template>
   </a-drawer>
@@ -54,7 +54,7 @@ defineOptions({
   name: 'PlaneFormComponent'
 })
 
-const {form, handleCreatePlane, openForm }  = usePlaneComposable()
+const {form, handleCreateOrUpdatePlane, openForm, handleCloseForm, isEdit }  = usePlaneComposable()
 
 </script>
 
