@@ -1,0 +1,30 @@
+{
+  "name": "backend-idat",
+  "version": "1.0.0",
+  "description": "Aplicación backend para demo-idat",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "build": "echo 'Build completado con éxito'"
+  },
+  "keywords": [
+    "node",
+    "express",
+    "api",
+    "backend",
+    "idat"
+  ],
+  "author": "IDAT",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+

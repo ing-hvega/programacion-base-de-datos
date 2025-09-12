@@ -1,0 +1,134 @@
+version: '3.8'
+
+services:
+  # Servicio de Nginx
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "81:81"
+    volumes:
+      - ./public:/usr/share/nginx/html
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - traefik-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nginx.rule=Host(`${NGINX_DOMAIN}`)"
+      - "traefik.http.routers.nginx.entrypoints=websecure"
+      - "traefik.http.routers.nginx.tls=true"
+      - "traefik.http.routers.nginx.tls.certresolver=duckdnsResolver"
+      - "traefik.http.services.nginx-service.loadbalancer.server.port=81"
+
+  # Servicio de Backend Node.js
+  backend:
+    image: backend-idat:latest
+    container_name: backend-idat
+    ports:
+      - "3000:3000"
+    networks:
+      - traefik-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.backend.rule=Host(`${BACKEND_DOMAIN}`)"
+      - "traefik.http.routers.backend.entrypoints=websecure"
+      - "traefik.http.routers.backend.tls=true"
+      - "traefik.http.routers.backend.tls.certresolver=duckdnsResolver"
+      - "traefik.http.services.backend-service.loadbalancer.server.port=3000"
+
+  # Servicio Apache
+  apache:
+    image: httpd:2.4-alpine
+    container_name: apache
+    ports:
+      - "82:82"
+    volumes:
+      - ./apache/html:/var/www/html
+      - ./apache/conf/apache-ida.conf:/usr/local/apache2/conf/extra/apache-ida.conf
+    networks:
+      - traefik-network
+    restart: unless-stopped
+    environment:
+      - SERVER_NAME=apache-ida.duckdns.org
+    command: sh -c "mkdir -p /usr/local/apache2/logs && echo 'Listen 82' >> /usr/local/apache2/conf/httpd.conf && echo 'Include conf/extra/apache-ida.conf' >> /usr/local/apache2/conf/httpd.conf && httpd-foreground"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.apache.rule=Host(`${APACHE_DOMAIN}`)"
+      - "traefik.http.routers.apache.entrypoints=websecure"
+      - "traefik.http.routers.apache.tls=true"
+      - "traefik.http.routers.apache.tls.certresolver=duckdnsResolver"
+      - "traefik.http.services.apache-service.loadbalancer.server.port=82"
+
+  # Servicio Proxy para S3
+  frontend-s3:
+    image: nginx:alpine
+    container_name: frontend-s3
+    ports:
+      - "83:83"
+    volumes:
+      - ./s3/conf.d:/etc/nginx/conf.d
+    networks:
+      - traefik-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend-s3.rule=Host(`${FRONTEND_S3_DOMAIN}`)"
+      - "traefik.http.routers.frontend-s3.entrypoints=websecure"
+      - "traefik.http.routers.frontend-s3.tls=true"
+      - "traefik.http.routers.frontend-s3.tls.certresolver=duckdnsResolver"
+      - "traefik.http.services.frontend-s3-service.loadbalancer.server.port=83"
+
+  # Servicio Traefik como proxy inverso
+  traefik:
+    image: traefik:v2.9
+    container_name: traefik
+    command:
+      - "--api.insecure=false"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=traefik-network"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--certificatesresolvers.duckdnsResolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.duckdnsResolver.acme.email=${TRAEFIK_ACME_EMAIL}"
+      - "--certificatesresolvers.duckdnsResolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - traefik-network
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=Host(`${TRAEFIK_DASHBOARD_DOMAIN}`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+      - "traefik.http.routers.dashboard.tls.certresolver=duckdnsResolver"
+
+  # Servicio para actualizar automáticamente la IP en DuckDNS
+  duckdns:
+    image: linuxserver/duckdns
+    container_name: duckdns
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${DUCKDNS_TZ}
+      - SUBDOMAINS=${DUCKDNS_SUBDOMAIN}
+      - TOKEN=${DUCKDNS_TOKEN}
+      - LOG_FILE=false
+    restart: unless-stopped
+    networks:
+      - traefik-network
+
+networks:
+  traefik-network:
+    driver: bridge
