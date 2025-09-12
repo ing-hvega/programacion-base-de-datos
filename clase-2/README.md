@@ -1,31 +1,18 @@
-# Proyecto Clase-2: Sistema de Gestión Escolar con Bases de Datos
+# Sistema de Gestión Escolar con Bases de Datos
 
 Este proyecto implementa un sistema de gestión escolar utilizando dos bases de datos diferentes (MySQL y MongoDB) con Docker para la containerización y scripts de Python para poblar las bases de datos con datos ficticios.
 
-## 📋 Tabla de Contenidos
+## Tecnologías utilizadas
 
-- [Descripción del Proyecto](#descripción-del-proyecto)
-- [Estructura del Proyecto](#estructura-del-proyecto)
-- [Tecnologías Utilizadas](#tecnologías-utilizadas)
-- [Requisitos Previos](#requisitos-previos)
-- [Instalación](#instalación)
-- [Configuración](#configuración)
-- [Uso](#uso)
-- [Base de Datos](#base-de-datos)
-- [Scripts de Población](#scripts-de-población)
-- [Docker](#docker)
-- [Solución de Problemas](#solución-de-problemas)
+- **Python 3.8+**: Lenguaje de programación principal
+- **MySQL 8.0.23**: Base de datos relacional
+- **MongoDB 8.0.12**: Base de datos NoSQL
+- **Docker & Docker Compose**: Containerización y orquestación
+- **Faker**: Generación de datos ficticios
+- **pymongo**: Driver de Python para MongoDB
+- **mysql-connector-python**: Driver de Python para MySQL
 
-## 🎯 Descripción del Proyecto
-
-El proyecto **Clase-2** es un sistema de gestión escolar que demuestra el uso de dos sistemas de gestión de bases de datos diferentes:
-
-- **MySQL**: Base de datos relacional para almacenar información estructurada de estudiantes, profesores, cursos e inscripciones
-- **MongoDB**: Base de datos NoSQL para almacenar la misma información en formato de documentos JSON
-
-El sistema incluye scripts automatizados para poblar ambas bases de datos con datos ficticios realistas utilizando la librería Faker.
-
-## 📁 Estructura del Proyecto
+## Estructura del proyecto
 
 ```
 clase-2/
@@ -44,17 +31,7 @@ clase-2/
 └── mysql/              # Configuración adicional de MySQL (si existe)
 ```
 
-## 🛠 Tecnologías Utilizadas
-
-- **Python 3.8+**: Lenguaje de programación principal
-- **MySQL 8.0.23**: Base de datos relacional
-- **MongoDB 8.0.12**: Base de datos NoSQL
-- **Docker & Docker Compose**: Containerización y orquestación
-- **Faker**: Generación de datos ficticios
-- **pymongo**: Driver de Python para MongoDB
-- **mysql-connector-python**: Driver de Python para MySQL
-
-## 📋 Requisitos Previos
+## Requisitos previos
 
 Antes de comenzar, asegúrate de tener instalado:
 
@@ -63,7 +40,7 @@ Antes de comenzar, asegúrate de tener instalado:
 - **Docker Compose** (incluido en Docker Desktop)
 - **Git** (opcional, para clonar el repositorio)
 
-### Verificar Instalaciones
+### Verificar instalaciones
 
 ```bash
 python --version
@@ -71,9 +48,9 @@ docker --version
 docker-compose --version
 ```
 
-## 🚀 Instalación
+## Instalación
 
-### Paso 1: Clonar o Descargar el Proyecto
+### Paso 1: Clonar o descargar el proyecto
 
 Si tienes acceso al repositorio:
 ```bash
@@ -81,13 +58,13 @@ git clone [URL_DEL_REPOSITORIO]
 cd clase-2
 ```
 
-### Paso 2: Instalar Dependencias
+### Paso 2: Instalar dependencias
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### Paso 3: Configurar Variables de Entorno
+### Paso 3: Configurar variables de entorno
 
 ```bash
 # Copiar archivo de ejemplo
@@ -96,9 +73,9 @@ cp .env.example .env
 # Editar .env con tus configuraciones (opcional, los valores por defecto funcionan)
 ```
 
-## ⚙️ Configuración
+## Configuración
 
-### Variables de Entorno (.env)
+### Variables de entorno (.env)
 
 El archivo `.env` contiene las siguientes variables configurables:
 
@@ -117,14 +94,9 @@ DB_DATABASE_MONGO=main               # Nombre de la base de datos
 FORWARD_MONGODB_PORT=27018           # Puerto expuesto para MongoDB
 ```
 
-### Configuración de Puertos
+## Uso
 
-- **MySQL**: Puerto 3308 (para evitar conflictos con instalaciones locales)
-- **MongoDB**: Puerto 27018 (para evitar conflictos con instalaciones locales)
-
-## 🖥 Uso
-
-### Paso 1: Iniciar los Contenedores
+### Iniciar los contenedores
 
 ```bash
 # Construir e iniciar los contenedores
@@ -134,14 +106,14 @@ docker-compose up -d
 docker-compose ps
 ```
 
-### Paso 2: Crear la Base de Datos MySQL
+### Crear la base de datos MySQL
 
 ```bash
 # Ejecutar el script SQL en MySQL
 docker exec -i mysqldb mysql -uroot -proot < colegio.sql
 ```
 
-### Paso 3: Poblar las Bases de Datos
+### Poblar las bases de datos
 
 ```bash
 # Poblar MySQL con datos ficticios
@@ -151,190 +123,476 @@ python faker_mysql.py
 python faker_mongodb.py
 ```
 
-### Comandos Útiles de Docker
+## Endpoints y Operaciones
 
-```bash
-# Ver logs de los contenedores
-docker-compose logs mysql
-docker-compose logs mongo
+Este proyecto implementa operaciones CRUD (Crear, Leer, Actualizar, Eliminar) para gestionar entidades educativas en dos bases de datos diferentes. A continuación se detallan los endpoints y operaciones disponibles con sus estructuras de request:
 
-# Detener los contenedores
-docker-compose stop
+### Endpoints MySQL
 
-# Reiniciar los contenedores
-docker-compose restart
+Las siguientes operaciones se ejecutan directamente a través de consultas SQL en la base de datos MySQL:
 
-# Eliminar contenedores y volúmenes
-docker-compose down -v
-```
+#### Operaciones de Estudiantes
 
-## 🗄 Base de Datos
+- **Crear estudiante**: 
+  ```
+  Endpoint: POST /api/mysql/students
+  Método: SQL INSERT
+  Request:
+  {
+    "first_name": "string", // Nombre del estudiante
+    "last_name": "string",  // Apellido del estudiante
+    "birth_date": "date",   // Formato YYYY-MM-DD
+    "email": "string"       // Correo electrónico único
+  }
+  Query SQL:
+  INSERT INTO students (first_name, last_name, birth_date, email) 
+  VALUES (?, ?, ?, ?)
+  ```
 
-### Esquema MySQL
+- **Listar estudiantes**: 
+  ```
+  Endpoint: GET /api/mysql/students
+  Método: SQL SELECT
+  Request: No requiere parámetros
+  Query SQL:
+  SELECT * FROM students
+  ```
 
-La base de datos `school` contiene las siguientes tablas:
+- **Buscar estudiante por ID**: 
+  ```
+  Endpoint: GET /api/mysql/students/{id}
+  Método: SQL SELECT
+  Request:
+  {
+    "id": integer  // ID del estudiante
+  }
+  Query SQL:
+  SELECT * FROM students WHERE id = ?
+  ```
 
-1. **students** (estudiantes)
-   - `id`: Clave primaria auto-incrementable
-   - `first_name`: Nombre del estudiante
-   - `last_name`: Apellido del estudiante
-   - `birth_date`: Fecha de nacimiento
-   - `email`: Correo electrónico único
+- **Buscar estudiante por email**: 
+  ```
+  Endpoint: GET /api/mysql/students/search?email={email}
+  Método: SQL SELECT
+  Request:
+  {
+    "email": "string"  // Correo del estudiante
+  }
+  Query SQL:
+  SELECT * FROM students WHERE email = ?
+  ```
 
-2. **teachers** (profesores)
-   - `id`: Clave primaria auto-incrementable
-   - `first_name`: Nombre del profesor
-   - `last_name`: Apellido del profesor
-   - `email`: Correo electrónico único
+#### Operaciones de Profesores
 
-3. **courses** (cursos)
-   - `id`: Clave primaria auto-incrementable
-   - `name`: Nombre del curso
-   - `description`: Descripción del curso
-   - `teacher_id`: Clave foránea hacia teachers
+- **Crear profesor**: 
+  ```
+  Endpoint: POST /api/mysql/teachers
+  Método: SQL INSERT
+  Request:
+  {
+    "first_name": "string", // Nombre del profesor
+    "last_name": "string",  // Apellido del profesor
+    "email": "string"       // Correo electrónico único
+  }
+  Query SQL:
+  INSERT INTO teachers (first_name, last_name, email) 
+  VALUES (?, ?, ?)
+  ```
 
-4. **enrollments** (inscripciones)
-   - `id`: Clave primaria auto-incrementable
-   - `student_id`: Clave foránea hacia students
-   - `course_id`: Clave foránea hacia courses
-   - `enrollment_date`: Fecha de inscripción
-   - `grade`: Calificación (opcional)
+- **Listar profesores**: 
+  ```
+  Endpoint: GET /api/mysql/teachers
+  Método: SQL SELECT
+  Request: No requiere parámetros
+  Query SQL:
+  SELECT * FROM teachers
+  ```
 
-### Esquema MongoDB
+- **Buscar profesor por ID**: 
+  ```
+  Endpoint: GET /api/mysql/teachers/{id}
+  Método: SQL SELECT
+  Request:
+  {
+    "id": integer  // ID del profesor
+  }
+  Query SQL:
+  SELECT * FROM teachers WHERE id = ?
+  ```
 
-La base de datos `main` contiene las siguientes colecciones:
+#### Operaciones de Cursos
 
-- **students**: Documentos con información de estudiantes
-- **teachers**: Documentos con información de profesores
-- **courses**: Documentos con información de cursos
-- **enrollments**: Documentos con información de inscripciones
+- **Crear curso**: 
+  ```
+  Endpoint: POST /api/mysql/courses
+  Método: SQL INSERT
+  Request:
+  {
+    "name": "string",        // Nombre del curso
+    "description": "string", // Descripción del curso
+    "teacher_id": integer    // ID del profesor asignado
+  }
+  Query SQL:
+  INSERT INTO courses (name, description, teacher_id) 
+  VALUES (?, ?, ?)
+  ```
 
-Cada documento mantiene la misma estructura lógica que las tablas MySQL pero en formato JSON.
+- **Listar cursos**: 
+  ```
+  Endpoint: GET /api/mysql/courses
+  Método: SQL SELECT
+  Request: No requiere parámetros
+  Query SQL:
+  SELECT * FROM courses
+  ```
 
-## 🔄 Scripts de Población
+- **Buscar cursos por profesor**: 
+  ```
+  Endpoint: GET /api/mysql/courses/teacher/{teacher_id}
+  Método: SQL SELECT
+  Request:
+  {
+    "teacher_id": integer  // ID del profesor
+  }
+  Query SQL:
+  SELECT * FROM courses WHERE teacher_id = ?
+  ```
 
-### faker_mysql.py
+#### Operaciones de Inscripciones
 
-Este script se conecta a la base de datos MySQL y genera:
-- **5,000 estudiantes** con datos ficticios realistas
-- **1,000 profesores** con información completa
-- **30 cursos** con descripciones y asignaciones de profesores
-- **6,000 inscripciones** con fechas y calificaciones aleatorias
+- **Crear inscripción**: 
+  ```
+  Endpoint: POST /api/mysql/enrollments
+  Método: SQL INSERT
+  Request:
+  {
+    "student_id": integer,     // ID del estudiante
+    "course_id": integer,      // ID del curso
+    "enrollment_date": "date"  // Fecha de inscripción (YYYY-MM-DD)
+  }
+  Query SQL:
+  INSERT INTO enrollments (student_id, course_id, enrollment_date) 
+  VALUES (?, ?, ?)
+  ```
 
-### faker_mongodb.py
+- **Listar inscripciones**: 
+  ```
+  Endpoint: GET /api/mysql/enrollments
+  Método: SQL SELECT
+  Request: No requiere parámetros
+  Query SQL:
+  SELECT * FROM enrollments
+  ```
 
-Este script replica la misma funcionalidad para MongoDB:
-- Genera los mismos volúmenes de datos
-- Mantiene coherencia referencial mediante ObjectIds
-- Utiliza el mismo generador Faker configurado para español
+- **Buscar inscripciones por estudiante**: 
+  ```
+  Endpoint: GET /api/mysql/enrollments/student/{student_id}
+  Método: SQL SELECT
+  Request:
+  {
+    "student_id": integer  // ID del estudiante
+  }
+  Query SQL:
+  SELECT c.* FROM courses c
+  JOIN enrollments e ON c.id = e.course_id
+  WHERE e.student_id = ?
+  ```
 
-### Características de los Scripts
+- **Buscar estudiantes por curso**: 
+  ```
+  Endpoint: GET /api/mysql/enrollments/course/{course_id}
+  Método: SQL SELECT
+  Request:
+  {
+    "course_id": integer  // ID del curso
+  }
+  Query SQL:
+  SELECT s.* FROM students s
+  JOIN enrollments e ON s.id = e.student_id
+  WHERE e.course_id = ?
+  ```
 
-- **Emails únicos**: Garantizan que no se repitan direcciones de correo
-- **Datos realistas**: Utilizan Faker configurado para español (es_ES)
-- **Relaciones coherentes**: Mantienen integridad referencial
-- **Manejo de errores**: Incluyen try-catch para capturar problemas de conexión
-- **Progreso visual**: Muestran el progreso de la población de datos
+### Endpoints MongoDB
 
-## 🐳 Docker
+Las siguientes operaciones se realizan mediante el driver de Python para MongoDB:
 
-### docker-compose.yml
+#### Operaciones de Estudiantes
 
-El archivo de Docker Compose define dos servicios:
+- **Crear estudiante**: 
+  ```
+  Endpoint: POST /api/mongo/students
+  Método: insert_one
+  Request:
+  {
+    "first_name": "string",    // Nombre del estudiante
+    "last_name": "string",     // Apellido del estudiante
+    "birth_date": ISODate,     // Fecha de nacimiento
+    "email": "string",         // Correo electrónico único
+    "address": {
+      "street": "string",      // Dirección
+      "city": "string",        // Ciudad
+      "state": "string",       // Estado/Provincia
+      "postal_code": "string", // Código postal
+      "country": "string"      // País
+    },
+    "phone": "string",         // Número telefónico
+    "student_id": "string",    // ID de estudiante (formato: "STU000001")
+    "enrollment_year": number  // Año de inscripción
+  }
+  Operación MongoDB:
+  db.students.insert_one({...})
+  ```
 
-1. **mysql**:
-   - Imagen: mysql:8.0.23
-   - Puerto: 3308:3306
-   - Variables de entorno configurables
-   - Volumen persistente para datos
+- **Listar estudiantes**: 
+  ```
+  Endpoint: GET /api/mongo/students
+  Método: find
+  Request: No requiere parámetros
+  Operación MongoDB:
+  db.students.find({})
+  ```
 
-2. **mongo**:
-   - Imagen personalizada basada en mongo:8.0.12
-   - Puerto: 27018:27017
-   - Script de inicialización personalizado
-   - Volumen persistente para datos
+- **Buscar estudiante por ID**: 
+  ```
+  Endpoint: GET /api/mongo/students/{id}
+  Método: find_one
+  Request:
+  {
+    "_id": ObjectId  // ID de MongoDB
+  }
+  Operación MongoDB:
+  db.students.find_one({"_id": ObjectId("id")})
+  ```
 
-### Volúmenes
+- **Buscar estudiante por email**: 
+  ```
+  Endpoint: GET /api/mongo/students/search?email={email}
+  Método: find_one
+  Request:
+  {
+    "email": "string"  // Correo del estudiante
+  }
+  Operación MongoDB:
+  db.students.find_one({"email": "correo@ejemplo.com"})
+  ```
 
-- `mysql_data`: Persiste los datos de MySQL
-- `mongo_data`: Persiste los datos de MongoDB
+#### Operaciones de Profesores
 
-## 🔧 Solución de Problemas
+- **Crear profesor**: 
+  ```
+  Endpoint: POST /api/mongo/teachers
+  Método: insert_one/insert_many
+  Request:
+  {
+    "first_name": "string",  // Nombre del profesor
+    "last_name": "string",   // Apellido del profesor
+    "email": "string",       // Correo electrónico único
+    "department": "string",  // Departamento académico
+    "phone": "string",       // Número telefónico
+    "created_at": ISODate    // Fecha de creación
+  }
+  Operación MongoDB:
+  db.teachers.insert_one({...})
+  db.teachers.insert_many([{...}, {...}, ...])
+  ```
 
-### Error de Conexión a MySQL
+- **Listar profesores**: 
+  ```
+  Endpoint: GET /api/mongo/teachers
+  Método: find
+  Request: No requiere parámetros
+  Operación MongoDB:
+  db.teachers.find({})
+  ```
 
-```bash
-# Verificar que el contenedor esté ejecutándose
-docker-compose ps
+- **Buscar profesor por ID**: 
+  ```
+  Endpoint: GET /api/mongo/teachers/{id}
+  Método: find_one
+  Request:
+  {
+    "_id": ObjectId  // ID de MongoDB
+  }
+  Operación MongoDB:
+  db.teachers.find_one({"_id": ObjectId("id")})
+  ```
 
-# Ver logs del contenedor MySQL
-docker-compose logs mysql
+#### Operaciones de Cursos
 
-# Reiniciar el contenedor
-docker-compose restart mysql
-```
+- **Crear curso**: 
+  ```
+  Endpoint: POST /api/mongo/courses
+  Método: insert_one/insert_many
+  Request:
+  {
+    "name": "string",          // Nombre del curso
+    "description": "string",   // Descripción del curso
+    "teacher_id": ObjectId,    // ID del profesor (referencia)
+    "teacher_info": {          // Datos embebidos del profesor
+      "first_name": "string",
+      "last_name": "string",
+      "email": "string"
+    },
+    "credits": number,         // Créditos académicos
+    "duration_weeks": number,  // Duración en semanas
+    "created_at": ISODate      // Fecha de creación
+  }
+  Operación MongoDB:
+  db.courses.insert_one({...})
+  db.courses.insert_many([{...}, {...}, ...])
+  ```
 
-### Error de Conexión a MongoDB
+- **Listar cursos**: 
+  ```
+  Endpoint: GET /api/mongo/courses
+  Método: find
+  Request: No requiere parámetros
+  Operación MongoDB:
+  db.courses.find({})
+  ```
 
-```bash
-# Verificar logs de MongoDB
-docker-compose logs mongo
+- **Buscar cursos por profesor**: 
+  ```
+  Endpoint: GET /api/mongo/courses/teacher/{teacher_id}
+  Método: find
+  Request:
+  {
+    "teacher_id": ObjectId  // ID del profesor
+  }
+  Operación MongoDB:
+  db.courses.find({"teacher_id": ObjectId("id")})
+  ```
 
-# Conectar manualmente para verificar
-docker exec -it mongodb mongosh -u admin -p admin
-```
+#### Operaciones de Inscripciones
 
-### Error de Dependencias de Python
+- **Crear inscripción**: 
+  ```
+  Endpoint: POST /api/mongo/enrollments
+  Método: insert_one/insert_many
+  Request:
+  {
+    "student_id": ObjectId,     // ID del estudiante (referencia)
+    "course_id": ObjectId,      // ID del curso (referencia)
+    "enrollment_date": ISODate,  // Fecha de inscripción
+    "status": "string",          // Estado (ej: "active", "completed")
+    "grade": number,             // Calificación (opcional)
+    "student_info": {            // Datos embebidos del estudiante
+      "first_name": "string",
+      "last_name": "string",
+      "email": "string"
+    },
+    "course_info": {             // Datos embebidos del curso
+      "name": "string",
+      "description": "string"
+    }
+  }
+  Operación MongoDB:
+  db.enrollments.insert_one({...})
+  db.enrollments.insert_many([{...}, {...}, ...])
+  ```
 
-```bash
-# Actualizar pip
-python -m pip install --upgrade pip
+- **Listar inscripciones**: 
+  ```
+  Endpoint: GET /api/mongo/enrollments
+  Método: find
+  Request: No requiere parámetros
+  Operación MongoDB:
+  db.enrollments.find({})
+  ```
 
-# Reinstalar dependencias
-pip uninstall -r requirements.txt -y
-pip install -r requirements.txt
-```
+- **Buscar inscripciones por estudiante**: 
+  ```
+  Endpoint: GET /api/mongo/enrollments/student/{student_id}
+  Método: find
+  Request:
+  {
+    "student_id": ObjectId  // ID del estudiante
+  }
+  Operación MongoDB:
+  db.enrollments.find({"student_id": ObjectId("id")})
+  ```
 
-### Puertos en Uso
+- **Buscar inscripciones por curso**: 
+  ```
+  Endpoint: GET /api/mongo/enrollments/course/{course_id}
+  Método: find
+  Request:
+  {
+    "course_id": ObjectId  // ID del curso
+  }
+  Operación MongoDB:
+  db.enrollments.find({"course_id": ObjectId("id")})
+  ```
 
-Si los puertos 3308 o 27018 están ocupados:
+### Operaciones por Lotes
 
-1. Editar el archivo `.env`
-2. Cambiar las variables `FORWARD_MYSQL_PORT` y `FORWARD_MONGODB_PORT`
-3. Actualizar las configuraciones en los scripts Python
-4. Reiniciar los contenedores
+Los scripts `faker_mysql.py` y `faker_mongodb.py` implementan las siguientes operaciones por lotes:
 
-### Limpiar y Reiniciar
+#### MySQL (faker_mysql.py)
 
-```bash
-# Detener y eliminar todo
-docker-compose down -v
+- **Inserción masiva de profesores**: Inserta 1,000 registros en la tabla `teachers`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mysql.py
+  Operación: Múltiples INSERTs
+  Datos generados: 1,000 profesores con información ficticia
+  ```
 
-# Eliminar imágenes (opcional)
-docker rmi clase-2_mongo mysql:8.0.23
+- **Inserción masiva de cursos**: Inserta 30 registros en la tabla `courses`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mysql.py
+  Operación: Múltiples INSERTs
+  Datos generados: 30 cursos con descripciones y asignaciones de profesores
+  ```
 
-# Volver a construir
-docker-compose up -d --build
-```
+- **Inserción masiva de estudiantes**: Inserta 5,000 registros en la tabla `students`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mysql.py
+  Operación: Múltiples INSERTs
+  Datos generados: 5,000 estudiantes con información personal
+  ```
 
-## 📝 Notas Adicionales
+- **Inserción masiva de inscripciones**: Inserta hasta 6,000 registros en la tabla `enrollments`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mysql.py
+  Operación: Múltiples INSERTs
+  Datos generados: Aproximadamente 6,000 inscripciones con fechas aleatorias
+  ```
 
-- Los datos generados son completamente ficticios y seguros para usar en desarrollo
-- Los scripts pueden tardar varios minutos en completarse dependiendo del hardware
-- Se recomienda usar un entorno virtual para evitar conflictos de dependencias
-- Los volúmenes de Docker persisten los datos entre reinicios de contenedores
+#### MongoDB (faker_mongodb.py)
 
-## 🤝 Contribuciones
+- **Inserción masiva de profesores**: Inserta 1,000 documentos en la colección `teachers`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mongodb.py
+  Operación: insert_many
+  Datos generados: 1,000 profesores con información ampliada
+  ```
 
-Este proyecto es parte de un curso educativo. Para mejoras o sugerencias:
+- **Inserción masiva de cursos**: Inserta 30 documentos en la colección `courses`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mongodb.py
+  Operación: insert_many
+  Datos generados: 30 cursos con datos de profesores embebidos
+  ```
 
-1. Crea una rama con tu feature
-2. Realiza los cambios necesarios
-3. Asegúrate de que los scripts funcionen correctamente
-4. Envía un pull request con descripción detallada
+- **Inserción masiva de estudiantes**: Inserta 5,000 documentos en la colección `students`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mongodb.py
+  Operación: insert_many
+  Datos generados: 5,000 estudiantes con información detallada y dirección
+  ```
 
----
+- **Inserción masiva de inscripciones**: Inserta hasta 6,000 documentos en la colección `enrollments`
+  ```
+  Endpoint: Script Python (ejecución directa)
+  Comando: python faker_mongodb.py
+  Operación: insert_many
+  Datos generados: Aproximadamente 6,000 inscripciones con referencias a estudiantes y cursos
+  ```
 
-**Autor**: Henry Vega   
-**Fecha**: 2025  
-**Versión**: 1.0
