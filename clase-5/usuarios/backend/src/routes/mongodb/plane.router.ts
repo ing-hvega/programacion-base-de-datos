@@ -1,5 +1,5 @@
 import {Router} from "express";
-import {createPlane, deletePlanes, getPlanes, getPlanesById, updatePlanes} from "../controllers/planes.controller";
+import {createPlane, deletePlanes, getPlanes, getPlanesById, updatePlanes} from "../../controllers/mongodb/planes.controller";
 
 const router = Router()
 

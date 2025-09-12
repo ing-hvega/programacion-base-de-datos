@@ -1,6 +1,5 @@
 import {Router} from "express";
-import {createUser, getUsers} from "../controllers/user.controller";
-import authMiddleware from "../middleware/auth.middleware";
+import {createUser, getUsers} from "../../controllers/mongodb/user.controller";
 
 const router = Router()
 

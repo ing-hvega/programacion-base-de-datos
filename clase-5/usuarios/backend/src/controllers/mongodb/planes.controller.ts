@@ -1,5 +1,5 @@
 import {Request, Response} from "express";
-import PlaneSchema from "../models/plane.schema";
+import PlaneSchema from "../../models/mongodb/plane.schema";
 
 const createPlane = async (req: Request, res: Response) => {
     try {

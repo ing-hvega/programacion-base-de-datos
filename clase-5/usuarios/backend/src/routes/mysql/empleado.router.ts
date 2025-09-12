@@ -1,6 +1,6 @@
-import { Router } from 'express';
-import authMiddleware from "../middleware/auth.middleware";
-import { EmpleadoControllerORM } from "../controllers/empleado.controller.orm";
+import { Router } from "express";
+import authMiddleware from "../../middleware/auth.middleware";
+import { EmpleadoControllerORM } from "../../controllers/mysql/empleado.controller.orm";
 
 const router = Router();
 const empleadoController = new EmpleadoControllerORM();

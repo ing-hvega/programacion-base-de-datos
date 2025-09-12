@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import { query } from '../config/database-mysql.config';
-import { Empleado, EmpleadoFiltros, CrearEmpleadoDTO, ActualizarEmpleadoDTO } from '../models/empleado.model';
+import { query } from '../../config/database-mysql.config';
+import { Empleado, EmpleadoFiltros, CrearEmpleadoDTO, ActualizarEmpleadoDTO } from '../../dto/empleado.model';
 
 export class EmpleadoController {
   /**

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { EmpleadoEntity } from '../models/empleado.entity';
-import { CrearEmpleadoDTO, ActualizarEmpleadoDTO, EmpleadoFiltros } from '../models/empleado.model';
-import { getDataSource } from '../config/typeorm.config';
+import { EmpleadoEntity } from '../../models/mysql/empleado.entity';
+import { CrearEmpleadoDTO, ActualizarEmpleadoDTO, EmpleadoFiltros } from '../../dto/empleado.model';
+import { getDataSource } from '../../config/typeorm.config';
 
 export class EmpleadoControllerORM {
   /**

@@ -11,6 +11,9 @@ importers:
       bcrypt:
         specifier: ^6.0.0
         version: 6.0.0
+      class-validator:
+        specifier: ^0.14.2
+        version: 0.14.2
       cors:
         specifier: ^2.8.5
         version: 2.8.5
@@ -151,6 +154,9 @@ packages:
   '@types/strip-json-comments@0.0.30':
     resolution: {integrity: sha512-7NQmHra/JILCd1QqpSzl8+mJRc8ZHz3uDm8YV1Ks9IhK0epEiTw8aIErbvH9PI+6XbqhyIQy3462nEsn7UVzjQ==}
 
+  '@types/validator@13.15.3':
+    resolution: {integrity: sha512-7bcUmDyS6PN3EuD9SlGGOxM77F8WLVsrwkxyWxKnxzmXoequ6c7741QBrANq6htVRGOITJ7z72mTP6Z4XyuG+Q==}
+
   '@types/webidl-conversions@7.0.3':
     resolution: {integrity: sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==}
 
@@ -279,6 +285,9 @@ packages:
   chokidar@3.6.0:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
+
+  class-validator@0.14.2:
+    resolution: {integrity: sha512-3kMVRF2io8N8pY1IFIXlho9r8IPUUIfHe2hYVtiebvAzU2XeQFXTv+XI4WX+TnXmtwXMDcjngcpkiPM0O9PvLw==}
 
   cliui@8.0.1:
     resolution: {integrity: sha512-BSeNnyus75C4//NQ9gQt1/csTXyo/8Sb+afLAkzAptFuMsod9HFokGNudZpi/oQV73hnVK+sR+5PVRMd+Dr7YQ==}
@@ -599,6 +608,9 @@ packages:
   kareem@2.6.3:
     resolution: {integrity: sha512-C3iHfuGUXK2u8/ipq9LfjFfXFxAZMQJJq7vLS45r3D9Y2xQ/m4S8zaR4zMLFWh9AsNPXmcFfUDhTEO8UIC/V6Q==}
     engines: {node: '>=12.0.0'}
+
+  libphonenumber-js@1.12.17:
+    resolution: {integrity: sha512-bsxi8FoceAYR/bjHcLYc2ShJ/aVAzo5jaxAYiMHF0BD+NTp47405CGuPNKYpw+lHadN9k/ClFGc9X5vaZswIrA==}
 
   lodash.includes@4.3.0:
     resolution: {integrity: sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==}
@@ -1126,6 +1138,10 @@ packages:
   v8-compile-cache-lib@3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
 
+  validator@13.15.15:
+    resolution: {integrity: sha512-BgWVbCI72aIQy937xbawcs+hrVaN/CZ2UwutgaJ36hGqRrLNM+f5LUT/YPRbo8IV/ASeFzXszezV+y2+rq3l8A==}
+    engines: {node: '>= 0.10'}
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -1283,6 +1299,8 @@ snapshots:
 
   '@types/strip-json-comments@0.0.30': {}
 
+  '@types/validator@13.15.3': {}
+
   '@types/webidl-conversions@7.0.3': {}
 
   '@types/whatwg-url@11.0.5':
@@ -1415,6 +1433,12 @@ snapshots:
       readdirp: 3.6.0
     optionalDependencies:
       fsevents: 2.3.3
+
+  class-validator@0.14.2:
+    dependencies:
+      '@types/validator': 13.15.3
+      libphonenumber-js: 1.12.17
+      validator: 13.15.15
 
   cliui@8.0.1:
     dependencies:
@@ -1742,6 +1766,8 @@ snapshots:
       safe-buffer: 5.2.1
 
   kareem@2.6.3: {}
+
+  libphonenumber-js@1.12.17: {}
 
   lodash.includes@4.3.0: {}
 
@@ -2216,6 +2242,8 @@ snapshots:
   uuid@11.1.0: {}
 
   v8-compile-cache-lib@3.0.1: {}
+
+  validator@13.15.15: {}
 
   vary@1.1.2: {}
 

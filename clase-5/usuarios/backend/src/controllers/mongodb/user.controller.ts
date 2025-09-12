@@ -1,5 +1,5 @@
 import {Request, Response} from "express";
-import UserSchema from "../models/user.schema";
+import UserSchema from "../../models/mongodb/user.schema";
 import bcrypt from "bcrypt";
 
 const createUser = async (req: Request, res: Response) => {

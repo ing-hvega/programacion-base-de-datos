@@ -1,5 +1,6 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { EmpleadoEntity } from '../models/empleado.entity';
+import { EmpleadoEntity } from '../models/mysql/empleado.entity';
+import { UserEntity } from '../models/mysql/user.entity';
 import { configDotenv } from 'dotenv';
 
 configDotenv();
@@ -12,7 +13,7 @@ const typeormConfig: DataSourceOptions = {
   username: process.env.MYSQL_USER || '',
   password: process.env.MYSQL_PASSWORD || '',
   database: process.env.MYSQL_DATABASE || '',
-  entities: [EmpleadoEntity],
+  entities: [EmpleadoEntity, UserEntity],
   synchronize: true, // En producción, cambia esto a false y usa migraciones
   logging: ['error', 'warn'],
   connectTimeout: 60000,

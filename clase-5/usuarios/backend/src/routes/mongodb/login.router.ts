@@ -1,5 +1,5 @@
 import {Router} from "express";
-import {authLogin} from "../controllers/login.controller";
+import {authLogin} from "../../controllers/mongodb/login.controller";
 
 const router = Router()
 
