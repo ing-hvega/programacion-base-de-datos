@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
-import { getRepository } from 'typeorm';
 import { EmpleadoEntity } from '../models/empleado.entity';
 import { CrearEmpleadoDTO, ActualizarEmpleadoDTO, EmpleadoFiltros } from '../models/empleado.model';
+import { getDataSource } from '../config/typeorm.config';
 
 export class EmpleadoControllerORM {
   /**
@@ -10,7 +10,8 @@ export class EmpleadoControllerORM {
   async createEmpleado(req: Request, res: Response): Promise<void> {
     try {
       const empleadoData: CrearEmpleadoDTO = req.body;
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       // Validaciones básicas
       if (!empleadoData.nombre) {
@@ -52,6 +53,7 @@ export class EmpleadoControllerORM {
         data: empleadoGuardado
       });
     } catch (error: any) {
+      console.error('Error en createEmpleado:', error);
       res.status(500).json({
         success: false,
         message: 'Error al crear el empleado',
@@ -67,7 +69,8 @@ export class EmpleadoControllerORM {
     try {
       const { id } = req.params;
       const empleadoData: ActualizarEmpleadoDTO = req.body;
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       if (Object.keys(empleadoData).length === 0) {
         res.status(400).json({
@@ -131,6 +134,7 @@ export class EmpleadoControllerORM {
         data: empleadoActualizado
       });
     } catch (error: any) {
+      console.error('Error en updateEmpleado:', error);
       res.status(500).json({
         success: false,
         message: 'Error al actualizar el empleado',
@@ -145,7 +149,8 @@ export class EmpleadoControllerORM {
   async getEmpleadoById(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       const empleado = await empleadoRepository.findOne({ where: { id: Number(id) } });
 
@@ -162,6 +167,7 @@ export class EmpleadoControllerORM {
         data: empleado
       });
     } catch (error: any) {
+      console.error('Error en getEmpleadoById:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener el empleado',
@@ -176,7 +182,8 @@ export class EmpleadoControllerORM {
   async deleteEmpleado(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       const empleado = await empleadoRepository.findOne({ where: { id: Number(id) } });
 
@@ -195,6 +202,7 @@ export class EmpleadoControllerORM {
         message: 'Empleado eliminado exitosamente'
       });
     } catch (error: any) {
+      console.error('Error en deleteEmpleado:', error);
       res.status(500).json({
         success: false,
         message: 'Error al eliminar el empleado',
@@ -209,7 +217,8 @@ export class EmpleadoControllerORM {
   async getEmpleados(req: Request, res: Response): Promise<void> {
     try {
       const filtros: EmpleadoFiltros = req.query as any;
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       // Crear el query builder para aplicar filtros
       const queryBuilder = empleadoRepository.createQueryBuilder('empleado');
@@ -251,6 +260,7 @@ export class EmpleadoControllerORM {
         data: empleados
       });
     } catch (error: any) {
+      console.error('Error en getEmpleados:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener los empleados',
@@ -264,7 +274,8 @@ export class EmpleadoControllerORM {
    */
   async getDepartamentos(req: Request, res: Response): Promise<void> {
     try {
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       const departamentos = await empleadoRepository
         .createQueryBuilder('empleado')
@@ -277,6 +288,7 @@ export class EmpleadoControllerORM {
         data: departamentos.map(item => item.departamento).filter(Boolean)
       });
     } catch (error: any) {
+      console.error('Error en getDepartamentos:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener los departamentos',
@@ -290,7 +302,8 @@ export class EmpleadoControllerORM {
    */
   async getCargos(req: Request, res: Response): Promise<void> {
     try {
-      const empleadoRepository = getRepository(EmpleadoEntity);
+      const dataSource = await getDataSource();
+      const empleadoRepository = dataSource.getRepository(EmpleadoEntity);
 
       const cargos = await empleadoRepository
         .createQueryBuilder('empleado')
@@ -303,6 +316,7 @@ export class EmpleadoControllerORM {
         data: cargos.map(item => item.cargo).filter(Boolean)
       });
     } catch (error: any) {
+      console.error('Error en getCargos:', error);
       res.status(500).json({
         success: false,
         message: 'Error al obtener los cargos',

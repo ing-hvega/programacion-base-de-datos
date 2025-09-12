@@ -3,38 +3,38 @@ import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 @Entity('empleados')
 export class EmpleadoEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  nombre: string;
+  nombre!: string;
 
   @Column()
-  apellido: string;
+  apellido!: string;
 
   @Column({ unique: true, nullable: true })
-  email: string;
+  email!: string;
 
   @Column({ unique: true, nullable: true })
-  dni: string;
+  dni!: string;
 
   @Column({ nullable: true })
-  telefono: string;
+  telefono!: string;
 
   @Column({ nullable: true })
-  direccion: string;
+  direccion!: string;
 
   @Column({ nullable: true })
-  departamento: string;
+  departamento!: string;
 
   @Column({ nullable: true })
-  cargo: string;
+  cargo!: string;
 
   @Column({ default: 'activo' })
-  estado: string;
+  estado!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
-  salario: number;
+  salario!: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
-  fechaContratacion: Date;
+  fechaContratacion!: Date;
 }
